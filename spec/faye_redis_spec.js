@@ -1,19 +1,25 @@
 var RedisEngine = require('../faye-redis')
+var Redis = require('ioredis');
 
 JS.Test.describe("Redis engine", function() { with(this) {
   before(function() {
-    var pw = process.env.TRAVIS ? undefined : "foobared"
-    this.engineOpts = {type: RedisEngine, password: pw, namespace: new Date().getTime().toString()}
+    this.engineOpts = {
+      type: RedisEngine,
+      redisClass: Redis.Cluster,
+      redisConnectionOptions: [{
+        port: 7000,
+        host: '127.0.0.1'
+      }, {
+        port: 7001,
+        host: '127.0.0.1'
+      }],
+      namespace: new Date().getTime().toString() }
+
   })
 
   after(function(resume) { with(this) {
     disconnect_engine()
-    var redis = new require('ioredis')();
-    // redis.auth(engineOpts.password)
-    redis.flushall(function() {
-      redis.end()
-      resume()
-    })
+    resume();
   }})
 
   itShouldBehaveLike("faye engine")

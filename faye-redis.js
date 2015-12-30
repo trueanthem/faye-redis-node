@@ -1,36 +1,40 @@
 /* jshint node:true */
 'use strict';
 
-var Redis = require('ioredis');
 var Promise = require('bluebird');
 
 var Engine = function(server, options) {
   this._server  = server;
   this._options = options || {};
-
+  this._disconnected = false;
   var gc               = this._options.gc       || this.DEFAULT_GC,
       client           = this._options.client,
-      subscriberClient = this._options.subscriberClient,
-      socket           = this._options.socket;
+      subscriberClient = this._options.subscriberClient;
 
   this._ns  = this._options.namespace || '';
+
+  var RedisClass;
+  if (!client || !subscriberClient) {
+    RedisClass = this._options.redisClass || require('ioredis');
+  }
 
   if (client) {
     this._redis = client;
   } else {
-    this._redis = new Redis(this._options.redisConnectionOptions);
+    this._redis = new RedisClass(this._options.redisConnectionOptions);
   }
 
   if (subscriberClient) {
     this._subscriber = subscriberClient;
   } else {
-    this._subscriber = new Redis(this._options.redisConnectionOptions);
+    this._subscriber = new RedisClass(this._options.redisConnectionOptions);
   }
 
-  this._messageChannel = this._ns + '/notifications/messages';
-  this._closeChannel   = this._ns + '/notifications/close';
 
-  this._clientsKey = this._ns + '/clients';
+  this._messageChannel = this._ns + '{shared}/notifications/messages';
+  this._closeChannel   = this._ns + '{shared}/notifications/close';
+
+  this._clientsKey = this._ns + '{shared}/clients';
 
   var self = this;
   this._subscriber.subscribe(this._messageChannel);
@@ -52,10 +56,11 @@ Engine.prototype = {
   LOCK_TIMEOUT:     120,
 
   disconnect: function() {
-    this._redis.end();
-    this._subscriber.unsubscribe();
-    this._subscriber.end();
+    this._disconnected = true;
     clearInterval(this._gc);
+    this._redis.disconnect();
+    // this._subscriber.unsubscribe();
+    this._subscriber.disconnect();
   },
 
   _newClientId: function() {
@@ -241,6 +246,7 @@ Engine.prototype = {
   gc: function() {
     var timeout = this._server.timeout;
     if (typeof timeout !== 'number') return;
+    if (this._disconnected) return;
 
     return this._withLock('gc', function() {
       var cutoff = new Date().getTime() - 1000 * 2 * timeout;
@@ -263,19 +269,26 @@ Engine.prototype = {
     return this._redis.setnx(lockKey, expiry)
       .bind(this)
       .then(function(set) {
+        if (this._disconnected) return false;
+
         if (set === 1) {
           return true;
         }
 
         return this._redis.get(lockKey)
+          .bind(this)
           .then(function(timeout) {
+            if (this._disconnected) return false;
             if (!timeout) return false;
 
             var lockTimeout = parseInt(timeout, 10);
             if (currentTime < lockTimeout) return false;
 
             return this._redis.getset(lockKey, expiry)
+              .bind(this)
               .then(function(oldValue) {
+                if (this._disconnected) return false;
+
                 if (oldValue !== timeout) return false;
                 return true;
               });
@@ -287,25 +300,26 @@ Engine.prototype = {
         return Promise.try(callback)
           .bind(this)
           .finally(function() {
+            if (this._disconnected) return;
             if (new Date().getTime() < expiry) this._redis.del(lockKey);
           });
       });
   },
 
   _lockKey: function(lockName) {
-    return this._ns + '/locks/' + lockName;
+    return this._ns + '{shared}/locks/' + lockName;
   },
 
   _channelKey: function(channel) {
-    return this._ns + '/channels' + channel;
+    return this._ns + '{shared}/channels' + channel;
   },
 
   _clientChannelsKey: function(clientId) {
-    return this._ns + '/clients/' + clientId + '/channels';
+    return this._ns + '/clients/{' + clientId + '}/channels';
   },
 
   _clientMessagesKey: function(clientId) {
-    return this._ns + '/clients/' + clientId + '/messages';
+    return this._ns + '/clients/{' + clientId + '}/messages';
   }
 };
 
