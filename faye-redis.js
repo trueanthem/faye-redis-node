@@ -58,9 +58,15 @@ Engine.prototype = {
   disconnect: function() {
     this._disconnected = true;
     clearInterval(this._gc);
-    this._redis.disconnect();
-    // this._subscriber.unsubscribe();
-    this._subscriber.disconnect();
+
+    return Promise.all([
+      this._redis.disconnect(),
+      this._subscriber.disconnect()
+    ])
+    .nodeify(function(err) {
+      if (err) console.error(err.stack);
+    });
+
   },
 
   _newClientId: function() {
