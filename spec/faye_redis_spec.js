@@ -8,8 +8,8 @@ JS.Test.describe("Redis engine", function() { with(this) {
 
   after(function(resume) { with(this) {
     disconnect_engine()
-    var redis = require('redis').createClient(6379, 'localhost', {no_ready_check: true})
-    redis.auth(engineOpts.password)
+    var redis = new require('ioredis')();
+    // redis.auth(engineOpts.password)
     redis.flushall(function() {
       redis.end()
       resume()
