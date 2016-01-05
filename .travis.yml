@@ -15,3 +15,5 @@ before_script:
   - make travis-run
 
 env: TRAVIS=1
+
+sudo: false
