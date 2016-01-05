@@ -115,11 +115,7 @@ setup-redis-cluster: start
 	sleep 5
 
 travis-run: setup-redis-cluster
-
-	#########
-	# Run your tests/code here
-	# For example: py.test
-	#########
+	npm test
 
 	# Kill all redis nodes and do cleanup
 	make stop

@@ -12,6 +12,6 @@ before_install:
   - test $TRAVIS_NODE_VERSION = '0.8' && npm install -g npm@1.2.8000 || true
 
 before_script:
-  - make
+  - make travis-run
 
 env: TRAVIS=1
