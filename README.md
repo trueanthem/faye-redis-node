@@ -1,9 +1,15 @@
-# faye-redis [![Build Status](https://secure.travis-ci.org/faye/faye-redis-node.svg)](http://travis-ci.org/faye/faye-redis-node)
+# faye-ioredis
 
-This plugin provides a Redis-based backend for the
-[Faye](http://faye.jcoglan.com) messaging server. It allows a single Faye
-service to be distributed across many front-end web servers by storing state and
-routing messages through a [Redis](http://redis.io) database server.
+This plugin provides an redis based backend for the
+[Faye](http://faye.jcoglan.com) messaging server.
+
+It allows a single Faye service to be distributed
+across many front-end web servers by storing state and
+routing messages through a [Redis](http://redis.io)
+database server.
+
+It uses the [ioredis](https://github.com/luin/ioredis) client and
+supports Redis Cluster and Sentinel.
 
 
 ## Usage
@@ -11,9 +17,9 @@ routing messages through a [Redis](http://redis.io) database server.
 Pass in the engine and any settings you need when setting up your Faye server.
 
 ```js
-var faye  = require('faye'),
-    redis = require('faye-redis'),
-    http  = require('http');
+var faye        = require('faye');
+var fayeIoRedis = require('faye-ioredis');
+var http        = require('http');
 
 var server = http.createServer();
 
@@ -21,9 +27,11 @@ var bayeux = new faye.NodeAdapter({
   mount:    '/',
   timeout:  25,
   engine: {
-    type:   redis,
-    host:   'redis.example.com',
-    // more options
+    type: fayeIoRedis,
+    redisConnectionOptions: {  // See https://github.com/luin/ioredis/blob/master/API.md#new_Redis_new
+      port: 6379,              // Redis port
+      host: '127.0.0.1',       // Redis host
+    }
   }
 });
 
@@ -31,14 +39,39 @@ bayeux.attach(server);
 server.listen(8000);
 ```
 
-The full list of settings is as follows.
+## Cluster Support
 
-* <b>`host`</b> - hostname of your Redis instance
-* <b>`port`</b> - port number, default is `6379`
-* <b>`password`</b> - password, if `requirepass` is set
-* <b>`database`</b> - number of database to use, default is `0`
-* <b>`namespace`</b> - prefix applied to all keys, default is `''`
-* <b>`socket`</b> - path to Unix socket if `unixsocket` is set
+To use Redis Cluster support, use the `redisClass` option along-side
+`redisConnectionOptions`, like so:
+
+```js
+var faye        = require('faye');
+var fayeIoRedis = require('faye-ioredis');
+var Redis       = require('ioredis');
+var http        = require('http');
+
+var server = http.createServer();
+
+var bayeux = new faye.NodeAdapter({
+  mount:    '/',
+  timeout:  25,
+  engine: {
+    type: fayeIoRedis,
+    redisClass: Redis.Cluster, // Use Clustering
+    redisConnectionOptions: [{ // See https://github.com/luin/ioredis/blob/master/API.md#new-clusterstartupnodes-options
+      port: 7000,
+      host: '127.0.0.1'
+    }, {
+      port: 7001,
+      host: '127.0.0.1'
+    }],
+
+  }
+});
+
+bayeux.attach(server);
+server.listen(8000);
+```
 
 
 ## License

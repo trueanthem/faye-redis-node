@@ -1,7 +1,6 @@
 {
-  "name": "faye-redis",
+  "name": "faye-ioredis",
   "description": "Redis backend engine for Faye",
-  "homepage": "http://github.com/faye/faye-redis-node",
   "author": "James Coglan <jcoglan@gmail.com> (http://jcoglan.com/)",
   "keywords": [
     "pubsub",
@@ -23,9 +22,12 @@
   "scripts": {
     "test": "node spec/runner.js"
   },
-  "bugs": "http://github.com/faye/faye-redis-node/issues",
   "repository": {
     "type": "git",
-    "url": "git://github.com/faye/faye-redis-node.git"
-  }
+    "url": "git+https://github.com/suprememoocow/faye-ioredis.git"
+  },
+  "bugs": {
+    "url": "https://github.com/suprememoocow/faye-ioredis/issues"
+  },
+  "homepage": "https://github.com/suprememoocow/faye-ioredis#readme"
 }
