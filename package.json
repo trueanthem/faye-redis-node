@@ -5,10 +5,10 @@
 , "keywords"        : ["pubsub", "bayeux"]
 , "license"         : "MIT"
 
-, "version"         : "0.2.0"
+, "version"         : "0.2.0-1"
 , "engines"         : {"node": ">=0.4.0"}
 , "main"            : "./faye-redis"
-, "dependencies"    : {"redis": ""}
+, "dependencies"    : {"redis": "2.6.0-2"}
 , "devDependencies" : {"jstest": ""}
 
 , "scripts"         : {"test": "node spec/runner.js"}
