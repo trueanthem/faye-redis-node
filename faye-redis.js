@@ -163,19 +163,21 @@ Engine.prototype = {
   },
 
   subscribe: function(clientId, channel, callback, context) {
+    const time = new Date().getTime();
     return Promise.all([
-        this._redis.sadd(this._clientChannelsKey(clientId), channel),
-        this._redis.sadd(this._channelKey(channel), clientId)
-      ])
-      .bind(this)
-      .spread(function(added) {
-        if (added === 1) this._server.trigger('subscribe', clientId, channel);
-        this._server.debug('Subscribed client ? to channel ?', clientId, channel);
-      })
-      .nodeify(function(err) {
-        if (err) console.error(err.stack);
-        if (callback) callback.call(context);
-      });
+      this._redis.sadd(this._clientChannelsKey(clientId), channel),
+      this._redis.sadd(this._channelKey(channel), clientId),
+      this._redis.zadd(this._clientsKey, time, clientId)
+    ])
+    .bind(this)
+    .spread(function(added) {
+      if (added === 1) this._server.trigger('subscribe', clientId, channel);
+      this._server.debug('Subscribed client ? to channel ?', clientId, channel);
+    })
+    .nodeify(function(err) {
+      if (err) console.error(err.stack);
+      if (callback) callback.call(context);
+    });
   },
 
   unsubscribe: function(clientId, channel, callback, context) {
